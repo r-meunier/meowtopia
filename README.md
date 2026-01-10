@@ -1,3 +1,3 @@
 # Meowtopia - Virtual Pet Backend application
 
-An ambitious project from a long time ago...
+A project long in the making.
