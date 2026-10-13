@@ -8,7 +8,7 @@ The current focus is a client-first Unity prototype for browser play: one cat, l
 
 This repository brings together three early projects. They contain reusable artwork, models, screens, and gameplay experiments, but do not yet form a finished, integrated game.
 
-The newer Unity 6 cat-care prototype is being developed in a separate working copy and has **not yet been imported into this monorepo**. The Unity project currently committed here still records Unity **2022.3.37f1**.
+The Unity cat-care prototype is included in this monorepo and uses Unity **6000.6.5f1**. It includes loading and home screens, an animated Ragdoll, local saves, and a draggable yarn-ball activity. The earlier backend and mobile client remain separate prototypes.
 
 ## Repository structure
 
@@ -45,10 +45,11 @@ cd meowtopia
 ### Unity
 
 1. Add `meowtopia-unity` as a project in Unity Hub.
-2. The imported project's recorded Editor version is **2022.3.37f1**. The Unity 6 migration is ongoing in the separate prototype working copy.
-3. Open `Assets/Scenes/00_Boot.unity` as the original entry scene.
+2. Open it with Unity **6000.6.5f1** and allow package resolution and asset import to complete.
+3. Open `Assets/Scenes/Meowtopia_Loading.unity` and press **Play**. The loading scene prepares local progress and opens the home screen.
+4. Click **Play** in the game to drag the yarn ball near the cat; choose **Done playing** to end the activity.
 
-The imported project currently lacks a committed `Packages/manifest.json`. Package configuration, including Unity UI and TextMesh Pro dependencies, needs to be restored before this checkout can be treated as a reproducible build.
+Package manifests and asset metadata are included. See the [Unity README](meowtopia-unity/README.md) for controls and development checks. Browser delivery remains the target; a WebGL build has not yet been validated.
 
 ### Backend
 

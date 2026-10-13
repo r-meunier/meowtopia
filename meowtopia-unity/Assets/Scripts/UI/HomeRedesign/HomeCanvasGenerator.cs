@@ -52,7 +52,7 @@ public class HomeCanvasGenerator : MonoBehaviour {
         }
 
         // 3. Set Background
-        GameObject bg = CreateImage(canvas.transform, "Background", darkBgColor, Vector2.zero, Vector2.zero, Vector2.one, Vector2.one);
+        GameObject bg = CreateImage(canvas.transform, "Background", darkBgColor, Vector2.zero, Vector2.one, Vector2.zero);
         bg.transform.SetAsFirstSibling();
 
         // 4. Create Structure
