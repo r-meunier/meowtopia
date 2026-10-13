@@ -1,0 +1,187 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+
+public class CatCreationUI : MonoBehaviour {
+    [Header("UI References")]
+    [SerializeField] private TMP_InputField nameInput;
+    [SerializeField] private TMP_Dropdown breedDropdown;
+    [SerializeField] private Button[] baseColorButtons;
+    [SerializeField] private Button[] patternButtons;
+    [SerializeField] private Button[] patternColorButtons;
+    [SerializeField] private Button[] eyeColorButtons;
+    [SerializeField] private Button createButton;
+    [SerializeField] private Button backButton;
+
+    [Header("Preview")]
+    [SerializeField] private Image catPreview;
+    [SerializeField] private Animator previewAnimator;
+
+    // Selection tracking
+    private string selectedBaseColor = "Orange";
+    private string selectedPatternType = "Tabby";
+    private string selectedPatternColor = "Brown";
+    private string selectedEyeColor = "Green";
+
+    // References to databases and managers
+    [SerializeField] private CatAppearanceDatabase appearanceDB;
+
+    private void Start() {
+        SetupUI();
+        UpdatePreview();
+    }
+
+    private void SetupUI() {
+        // Set up breed dropdown
+        breedDropdown.ClearOptions();
+        List<string> breeds = new List<string> {
+            "Domestic Shorthair", "Domestic Longhair", "Siamese",
+            "Persian", "Maine Coon", "Bengal"
+        };
+        breedDropdown.AddOptions(breeds);
+
+        // Set up color buttons
+        // (In a real implementation, you'd loop through your color options)
+        for (int i = 0; i < baseColorButtons.Length; i++) {
+            int index = i; // Capture for lambda
+            baseColorButtons[i].onClick.AddListener(() => {
+                SelectBaseColor(index);
+            });
+        }
+
+        // Similar setup for pattern buttons, pattern color buttons, eye color buttons
+        // ...
+
+        // Create button
+        createButton.onClick.AddListener(CreateCat);
+
+        // Back button
+        backButton.onClick.AddListener(() => {
+            // Return to previous screen
+            UIManager.Instance.ShowScreen("MainMenu");
+        });
+
+        // Input validation
+        nameInput.onValueChanged.AddListener(ValidateInputs);
+    }
+
+    private void SelectBaseColor(int index) {
+        // Update the selected color based on index
+        // This is just an example - in a real implementation you'd have a proper data structure
+        string[] colors = { "Orange", "Black", "White", "Gray", "Brown", "Cream" };
+        if (index < colors.Length) {
+            selectedBaseColor = colors[index];
+
+            // Highlight selected button
+            for (int i = 0; i < baseColorButtons.Length; i++) {
+                // Use a color overlay or outline to show selection
+                baseColorButtons[i].GetComponent<Image>().color = (i == index)
+                    ? new Color(1, 1, 1, 1)
+                    : new Color(0.8f, 0.8f, 0.8f, 1);
+            }
+
+            UpdatePreview();
+        }
+    }
+
+    // Similar methods for pattern, pattern color, eye color selection
+    // ...
+
+    private void UpdatePreview() {
+        // In a real implementation, this would update the preview image
+        // based on the selected options
+
+        // Example pseudocode:
+        // Sprite baseSprite = appearanceDB.GetBaseSprite(selectedBaseColor);
+        // Sprite patternSprite = appearanceDB.GetPatternSprite(selectedPatternType, selectedPatternColor);
+        // Sprite eyesSprite = appearanceDB.GetEyesSprite(selectedEyeColor);
+
+        // Then combine these sprites to update the preview
+        // This would require a custom shader or layered UI elements
+
+        Debug.Log($"Updating preview: {selectedBaseColor} cat with {selectedPatternColor} {selectedPatternType} pattern and {selectedEyeColor} eyes");
+    }
+
+    private void ValidateInputs(string text) {
+        // Enable create button only if name is valid
+        bool nameValid = !string.IsNullOrWhiteSpace(nameInput.text) && nameInput.text.Length >= 2;
+        createButton.interactable = nameValid;
+    }
+
+    private void CreateCat() {
+        string name = nameInput.text.Trim();
+        string breed = breedDropdown.options[breedDropdown.value].text;
+
+        // Create the cat data
+        CatData newCat = CatManager.Instance.CreateNewCat(
+            name,
+            breed,
+            selectedBaseColor,
+            selectedPatternType,
+            selectedPatternColor,
+            selectedEyeColor
+        );
+
+        // Add to user's cats
+        UserManager.Instance.AddCatToUser(newCat.CatId);
+
+        // Save the game
+        GameManager.Instance.SaveGame();
+
+        // Show success message
+        // (In a real implementation, you might have a nice animation or notification)
+        Debug.Log($"Created new cat: {name}");
+
+        // Return to cat screen
+        UIManager.Instance.ShowScreen("CatView", newCat.CatId);
+    }
+}
+
+// Example database for cat appearance options
+public class CatAppearanceDatabase : MonoBehaviour {
+    [System.Serializable]
+    public class CatBaseColor {
+        public string ColorName;
+        public Sprite BaseSprite;
+        public Color ColorTint;
+    }
+
+    [System.Serializable]
+    public class CatPattern {
+        public string PatternName;
+        public Sprite PatternSprite;
+    }
+
+    [System.Serializable]
+    public class CatEyes {
+        public string EyeColorName;
+        public Sprite EyesSprite;
+    }
+
+    [SerializeField] private List<CatBaseColor> baseColors;
+    [SerializeField] private List<CatPattern> patterns;
+    [SerializeField] private List<CatEyes> eyes;
+
+    // Methods to retrieve sprites based on selection
+    public Sprite GetBaseSprite(string colorName) {
+        CatBaseColor color = baseColors.Find(c => c.ColorName == colorName);
+        return color?.BaseSprite;
+    }
+
+    public Color GetBaseColorTint(string colorName) {
+        CatBaseColor color = baseColors.Find(c => c.ColorName == colorName);
+        return color != null ? color.ColorTint : Color.white;
+    }
+
+    public Sprite GetPatternSprite(string patternName) {
+        CatPattern pattern = patterns.Find(p => p.PatternName == patternName);
+        return pattern?.PatternSprite;
+    }
+
+    public Sprite GetEyesSprite(string eyeColorName) {
+        CatEyes eye = eyes.Find(e => e.EyeColorName == eyeColorName);
+        return eye?.EyesSprite;
+    }
+}

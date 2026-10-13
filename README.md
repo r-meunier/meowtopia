@@ -14,6 +14,7 @@ The Unity cat-care prototype is included in this monorepo and uses Unity **6000.
 
 | Folder | Purpose | Technology |
 | --- | --- | --- |
+| [`helpers`](helpers/) | Unity diagnostics and earlier setup scripts | PowerShell |
 | [`meowtopia-unity`](meowtopia-unity/) | Game scenes, artwork, local saves, needs, inventory, and economy experiments | Unity / C# |
 | [`meowtopia-backend`](meowtopia-backend/) | Accounts, profiles, cats, breeds, shop items, inventory, and transactions | Java 22, Spring Boot 3.3.1, PostgreSQL |
 | [`meowtopia-mobile-app`](meowtopia-mobile-app/) | Earlier mobile client with pet-care, inventory, shop, and profile screens | Expo SDK 51, React Native 0.74, React 18 |
