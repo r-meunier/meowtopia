@@ -1,0 +1,13 @@
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: rmeunier
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: meowtopia-db
+
+volumes:
+  db_data:
