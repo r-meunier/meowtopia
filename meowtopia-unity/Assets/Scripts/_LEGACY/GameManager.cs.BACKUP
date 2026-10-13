@@ -1,0 +1,207 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class GameManager : MonoBehaviour {
+    public static GameManager Instance { get; private set; }
+
+    [Header("System References")]
+    [SerializeField] private UserManager userManager;
+    [SerializeField] private CatManager catManager;
+    [SerializeField] private UIManager uiManager;
+
+    // Game state
+    private GameSaveData saveData;
+    private bool isInitialized = false;
+
+    // Configuration
+    [SerializeField] private bool useCloudSave = false;
+    [SerializeField] private float autoSaveInterval = 300f; // 5 minutes
+    private float timeSinceLastSave = 0f;
+
+    private void Awake() {
+        // Singleton pattern
+        if (Instance != null && Instance != this) {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    private void Start() {
+        SceneManager.LoadScene("Main");
+        StartCoroutine(InitializeGame());
+    }
+
+    private void Update() {
+        if (!isInitialized) return;
+
+        // Auto-save
+        timeSinceLastSave += Time.deltaTime;
+        if (timeSinceLastSave >= autoSaveInterval) {
+            SaveGame();
+            timeSinceLastSave = 0f;
+        }
+    }
+
+    private IEnumerator InitializeGame() {
+        // Load saved game data
+        yield return StartCoroutine(LoadGame());
+
+        // Initialize systems with loaded data
+        if (saveData != null) {
+            userManager.Initialize(saveData.User);
+            catManager.Initialize(saveData.Cats);
+
+            // Apply settings
+            ApplyGameSettings(saveData.Settings);
+        } else {
+            // First time playing, create new save data
+            saveData = new GameSaveData {
+                User = new UserData {
+                    UserId = Guid.NewGuid().ToString(),
+                    Username = "Player",
+                    Currency = 100
+                },
+                LastSaveTime = DateTime.Now
+            };
+
+            userManager.Initialize(saveData.User);
+            catManager.Initialize(new List<CatData>());
+        }
+
+        isInitialized = true;
+
+        // Show the appropriate UI
+        if (saveData.Cats.Count == 0) {
+            // First time playing, show intro/tutorial
+            uiManager.ShowScreen("Intro");
+        } else {
+            // Returning player, show main menu
+            uiManager.ShowScreen("MainMenu");
+        }
+    }
+
+    private void ApplyGameSettings(GameSettings settings) {
+        // Apply sound settings
+        AudioListener.volume = settings.MasterVolume;
+
+        // Apply language settings
+        // LanguageManager.SetLanguage(settings.Language);
+
+        // Other settings...
+    }
+
+    public void SaveGame() {
+        if (!isInitialized) return;
+
+        // Update save data
+        saveData.User = userManager.GetUserData();
+        saveData.Cats = catManager.GetAllCatData();
+        saveData.LastSaveTime = DateTime.Now;
+
+        // Serialize and save
+        string json = JsonUtility.ToJson(saveData, true);
+
+        if (useCloudSave) {
+            // Cloud save implementation would go here
+            // This would integrate with Google Play Games, Apple Game Center, etc.
+            Debug.Log("Cloud save not implemented yet");
+        }
+
+        // Local save
+        try {
+            string savePath = GetSavePath();
+            File.WriteAllText(savePath, json);
+            Debug.Log($"Game saved to {savePath}");
+        } catch (Exception e) {
+            Debug.LogError($"Failed to save game: {e.Message}");
+        }
+    }
+
+    private IEnumerator LoadGame() {
+        string savePath = GetSavePath();
+
+        if (useCloudSave) {
+            // Cloud load implementation would go here
+            yield return null;
+        }
+
+        // Local load
+        if (File.Exists(savePath)) {
+            try {
+                string json = File.ReadAllText(savePath);
+                saveData = JsonUtility.FromJson<GameSaveData>(json);
+                Debug.Log($"Game loaded from {savePath}");
+
+                // Update last save time to current time
+                saveData.LastSaveTime = DateTime.Now;
+
+                // Update needs of all cats based on time passed since last save
+                UpdateCatsBasedOnTimePassed();
+            } catch (Exception e) {
+                Debug.LogError($"Failed to load game: {e.Message}");
+                saveData = null;
+            }
+        } else {
+            Debug.Log("No save file found, starting new game");
+            saveData = null;
+        }
+
+        yield return null;
+    }
+
+    private void UpdateCatsBasedOnTimePassed() {
+        // Update cat needs based on time passed since last save
+        TimeSpan timePassed = DateTime.Now - saveData.LastSaveTime;
+
+        foreach (CatData cat in saveData.Cats) {
+            // Calculate decreases in needs
+            float hoursElapsed = (float)timePassed.TotalHours;
+
+            // Hunger decreases faster than other needs
+            cat.Hunger = Mathf.Max(0, cat.Hunger - (2.5f * hoursElapsed));
+            cat.Energy = Mathf.Max(0, cat.Energy - (1.8f * hoursElapsed));
+            cat.Happiness = Mathf.Max(0, cat.Happiness - (2.0f * hoursElapsed));
+            cat.Hygiene = Mathf.Max(0, cat.Hygiene - (1.0f * hoursElapsed));
+
+            // Health is affected by other needs
+            float healthTarget = (cat.Hunger + cat.Energy + cat.Happiness + cat.Hygiene) / 4;
+            cat.Health = Mathf.Lerp(cat.Health, healthTarget, 0.5f);
+
+            // Update the timestamp
+            cat.LastUpdate = DateTime.Now;
+        }
+    }
+
+    private string GetSavePath() {
+        return Path.Combine(Application.persistentDataPath, "catsave.json");
+    }
+
+    public void DeleteSaveData() {
+        string savePath = GetSavePath();
+
+        if (File.Exists(savePath)) {
+            File.Delete(savePath);
+            Debug.Log("Save data deleted");
+        }
+
+        // Restart the game
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    public void QuitGame() {
+        // Save before quitting
+        SaveGame();
+
+        // Quit application
+        Application.Quit();
+
+        // In the editor, this doesn't work, so just log
+        Debug.Log("Application would quit here");
+    }
+}

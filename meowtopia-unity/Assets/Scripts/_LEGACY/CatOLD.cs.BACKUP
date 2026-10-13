@@ -1,0 +1,303 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+// This represents a single cat in the game
+public class Cat : MonoBehaviour {
+    public CatData Data;
+
+    [Header("Visual Components")]
+    public SpriteRenderer BodyRenderer;
+    public SpriteRenderer PatternRenderer;
+    public SpriteRenderer EyesRenderer;
+    public SpriteRenderer AccessoryRenderer;
+
+    [Header("Animation")]
+    public Animator CatAnimator;
+
+    // State tracking
+    private CatState currentState = CatState.Idle;
+
+    public enum CatState {
+        Idle,
+        Walking,
+        Sleeping,
+        Playing,
+        Eating,
+        Happy
+    }
+
+    private void Start() {
+        if (Data == null) {
+            Debug.LogError("Cat initialized without data!");
+            return;
+        }
+
+        UpdateVisuals();
+    }
+
+    private void Update() {
+        // Cat needs decrease over time
+        UpdateNeeds(Time.deltaTime);
+    }
+
+    public void UpdateNeeds(float deltaTime) {
+        // Calculate time since last update
+        TimeSpan timeSinceLastUpdate = DateTime.Now - Data.LastUpdate;
+        float hoursSinceLastUpdate = (float)timeSinceLastUpdate.TotalHours;
+
+        // Decrease needs based on time
+        // Hunger decreases faster than other needs
+        Data.Hunger = Mathf.Max(0, Data.Hunger - (2.5f * hoursSinceLastUpdate));
+        Data.Energy = Mathf.Max(0, Data.Energy - (1.8f * hoursSinceLastUpdate));
+        Data.Happiness = Mathf.Max(0, Data.Happiness - (2.0f * hoursSinceLastUpdate));
+        Data.Hygiene = Mathf.Max(0, Data.Hygiene - (1.0f * hoursSinceLastUpdate));
+
+        // Health is affected by other needs
+        UpdateHealth();
+
+        // Update the timestamp
+        Data.LastUpdate = DateTime.Now;
+    }
+
+    private void UpdateHealth() {
+        // Health is influenced by other stats
+        float healthTarget = (Data.Hunger + Data.Energy + Data.Happiness + Data.Hygiene) / 4;
+
+        // Health changes more slowly than other stats
+        Data.Health = Mathf.Lerp(Data.Health, healthTarget, 0.2f);
+    }
+
+    public void Feed(FoodItem food) {
+        // Update hunger based on food
+        Data.Hunger = Mathf.Min(100, Data.Hunger + food.HungerValue);
+
+        // Different foods might affect other stats
+        Data.Happiness = Mathf.Min(100, Data.Happiness + food.HappinessValue);
+
+        // Play eating animation
+        SetState(CatState.Eating);
+        CatAnimator.SetTrigger("Eat");
+
+        // Return to idle after animation
+        StartCoroutine(ReturnToIdleAfter(2.0f));
+    }
+
+    public void Sleep() {
+        // Sleeping replenishes energy
+        SetState(CatState.Sleeping);
+        CatAnimator.SetTrigger("Sleep");
+
+        // Energy recovery is handled in a coroutine
+        StartCoroutine(SleepRoutine());
+    }
+
+    private IEnumerator SleepRoutine() {
+        // Cat sleeps until full energy or woken up
+        while (Data.Energy < 100 && currentState == CatState.Sleeping) {
+            Data.Energy = Mathf.Min(100, Data.Energy + 5);
+            yield return new WaitForSeconds(3.0f);
+        }
+
+        // Wake up
+        SetState(CatState.Idle);
+    }
+
+    public void Play() {
+        // Playing increases happiness but consumes energy
+        SetState(CatState.Playing);
+        CatAnimator.SetTrigger("Play");
+
+        Data.Happiness = Mathf.Min(100, Data.Happiness + 15);
+        Data.Energy = Mathf.Max(0, Data.Energy - 10);
+
+        // Return to idle after animation
+        StartCoroutine(ReturnToIdleAfter(3.0f));
+    }
+
+    public void Groom() {
+        // Grooming improves hygiene
+        CatAnimator.SetTrigger("Groom");
+        Data.Hygiene = Mathf.Min(100, Data.Hygiene + 25);
+
+        // Slight happiness boost
+        Data.Happiness = Mathf.Min(100, Data.Happiness + 5);
+    }
+
+    public void GainExperience(int amount) {
+        Data.Experience += amount;
+
+        // Check for level up (simple formula: each level needs 100 * level XP)
+        int newLevel = 1 + (Data.Experience / 100);
+
+        if (newLevel > Data.Level) {
+            LevelUp(newLevel);
+        }
+    }
+
+    private void LevelUp(int newLevel) {
+        // Handle level up effects
+        int levelsGained = newLevel - Data.Level;
+        Data.Level = newLevel;
+
+        // Show level up effect
+        Debug.Log($"{Data.Name} leveled up to level {Data.Level}!");
+
+        // TODO: Trigger level up UI and effects
+    }
+
+    private void SetState(CatState newState) {
+        currentState = newState;
+        CatAnimator.SetInteger("State", (int)currentState);
+    }
+
+    private IEnumerator ReturnToIdleAfter(float seconds) {
+        yield return new WaitForSeconds(seconds);
+        SetState(CatState.Idle);
+    }
+
+    private void UpdateVisuals() {
+        // Update the cat's appearance based on CatData
+        // This would load the proper sprites for body, pattern, eyes, etc.
+
+        // Example: (assuming you have sprite reference tables)
+        // BodyRenderer.sprite = CatVisualDatabase.GetBodySprite(Data.BaseColor);
+        // PatternRenderer.sprite = CatVisualDatabase.GetPatternSprite(Data.PatternType, Data.PatternColor);
+        // EyesRenderer.sprite = CatVisualDatabase.GetEyesSprite(Data.EyeColor);
+
+        // For now we'll just log this
+        Debug.Log($"Updating visuals for {Data.Name}: {Data.BaseColor} with {Data.PatternColor} {Data.PatternType} pattern");
+    }
+}
+
+// This manages all cats in the game
+public class CatManager : MonoBehaviour {
+    public static CatManager Instance { get; private set; }
+
+    [SerializeField] private GameObject catPrefab;
+    [SerializeField] private Transform catsParent;
+
+    private Dictionary<string, Cat> activeCats = new Dictionary<string, Cat>();
+    private List<CatData> allCatData = new List<CatData>();
+
+    private void Awake() {
+        // Singleton pattern
+        if (Instance != null && Instance != this) {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    public void Initialize(List<CatData> savedCats) {
+        allCatData = savedCats ?? new List<CatData>();
+    }
+
+    public CatData CreateNewCat(string name, string breed, string baseColor, string patternType, string patternColor, string eyeColor) {
+        CatData newCatData = new CatData {
+            CatId = Guid.NewGuid().ToString(),
+            Name = name,
+            Breed = breed,
+            BirthDate = DateTime.Now,
+            Experience = 0,
+            Level = 1,
+
+            // Appearance
+            BaseColor = baseColor,
+            PatternType = patternType,
+            PatternColor = patternColor,
+            EyeColor = eyeColor,
+
+            // Start with full stats
+            Hunger = 100,
+            Energy = 100,
+            Happiness = 100,
+            Hygiene = 100,
+            Health = 100,
+
+            // Random personality (1-10)
+            Playfulness = UnityEngine.Random.Range(1, 11),
+            Independence = UnityEngine.Random.Range(1, 11),
+            Curiosity = UnityEngine.Random.Range(1, 11),
+            Affection = UnityEngine.Random.Range(1, 11),
+
+            LastUpdate = DateTime.Now
+        };
+
+        allCatData.Add(newCatData);
+        return newCatData;
+    }
+
+    public Cat SpawnCat(string catId) {
+        // Find the cat data
+        CatData catData = allCatData.Find(c => c.CatId == catId);
+        if (catData == null) {
+            Debug.LogError($"No cat found with ID: {catId}");
+            return null;
+        }
+
+        // Check if already spawned
+        if (activeCats.ContainsKey(catId)) {
+            return activeCats[catId];
+        }
+
+        // Spawn the cat
+        GameObject catObject = Instantiate(catPrefab, catsParent);
+        Cat cat = catObject.GetComponent<Cat>();
+        cat.Data = catData;
+
+        // Track the cat
+        activeCats[catId] = cat;
+
+        return cat;
+    }
+
+    public void DespawnCat(string catId) {
+        if (activeCats.TryGetValue(catId, out Cat cat)) {
+            Destroy(cat.gameObject);
+            activeCats.Remove(catId);
+        }
+    }
+
+    public List<CatData> GetAllCatData() {
+        return new List<CatData>(allCatData);
+    }
+
+    public CatData GetCatData(string catId) {
+        return allCatData.Find(c => c.CatId == catId);
+    }
+
+    public Cat GetActiveCat(string catId) {
+        if (activeCats.TryGetValue(catId, out Cat cat)) {
+            return cat;
+        }
+        return null;
+    }
+
+    public void UpdateCatData(CatData updatedData) {
+        // Update the stored data
+        int index = allCatData.FindIndex(c => c.CatId == updatedData.CatId);
+        if (index >= 0) {
+            allCatData[index] = updatedData;
+        }
+
+        // Update the active cat if it's spawned
+        if (activeCats.TryGetValue(updatedData.CatId, out Cat cat)) {
+            cat.Data = updatedData;
+        }
+    }
+}
+
+// Food items for feeding cats
+[Serializable]
+public class FoodItem {
+    public string Id;
+    public string Name;
+    public string Description;
+    public Sprite Icon;
+    public float HungerValue;
+    public float HappinessValue;
+    public int Price;
+}
