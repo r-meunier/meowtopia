@@ -1,6 +1,6 @@
 # Unity helpers
 
-The active project is `../meowtopia-unity`, opened with Unity **6000.6.5f1**. The `meowtopia-unity-v2` folder is the preserved copy moved from Game Dev; use the main project for future edits.
+The active project is `../meowtopia-unity`, opened with Unity **6000.6.5f1**. An identical `meowtopia-unity-v2` copy (moved from Game Dev) was removed; it remains in Git history if ever needed.
 
 Run commands from the repository root with PowerShell 7 (`pwsh`).
 
@@ -19,4 +19,4 @@ pwsh -NoProfile -File .\helpers\unity-mcp-check.ps1 -Tool read_console -Argument
 
 The installer and migration helper accept `-ProjectPath` to target another project explicitly; otherwise they resolve the main project relative to this folder. Neither runs automatically.
 
-The root `unity-*.log` files and `unity-import-plan.json` are historical migration output, separate from these helpers. Recovery backups are stored locally under `.local-recovery/` and ignored by Git.
+The historical migration output (`unity-*.log` and `unity-import-plan.json`) was removed from the repository root; it remains in Git history. Recovery backups are stored locally under `.local-recovery/` and ignored by Git.
