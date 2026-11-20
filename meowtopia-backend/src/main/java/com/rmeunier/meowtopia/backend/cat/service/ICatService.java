@@ -1,6 +1,7 @@
 package com.rmeunier.meowtopia.backend.cat.service;
 
 import com.rmeunier.meowtopia.backend.cat.model.dto.CatDto;
+import com.rmeunier.meowtopia.backend.shop.model.ShopItem;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -23,8 +24,6 @@ public interface ICatService {
 
     CatDto createCat(UUID userAccountId, UUID breedId, CatDto catDto);
 
-    CatDto feedCat(UUID catId, UUID foodId);
-
     CatDto updateCat(UUID catId, CatDto updatedCatDto);
 
     boolean deleteCat(UUID catId);
@@ -34,4 +33,6 @@ public interface ICatService {
     Page<CatDto> findByBreedId(UUID breedId, Integer page, Integer size, String orderBy, String direction);
 
     void updateAllCatAgesAndLifeStages();
+
+    CatDto applyItemEffectsToCat(UUID catId, UUID itemId);
 }

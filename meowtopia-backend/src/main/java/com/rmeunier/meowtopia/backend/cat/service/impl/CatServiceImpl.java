@@ -12,6 +12,7 @@ import com.rmeunier.meowtopia.backend.cat.model.Cat;
 import com.rmeunier.meowtopia.backend.cat.service.ICatService;
 import com.rmeunier.meowtopia.backend.cat.utils.DateConverterUtil;
 import com.rmeunier.meowtopia.backend.shop.exception.ProductNotFoundException;
+import com.rmeunier.meowtopia.backend.shop.model.ShopItem;
 import com.rmeunier.meowtopia.backend.shop.model.shopitems.Food;
 import com.rmeunier.meowtopia.backend.shop.repo.shopitems.IFoodRepository;
 import com.rmeunier.meowtopia.backend.user.exception.UserAccountNotFoundException;
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -140,23 +142,6 @@ public class CatServiceImpl implements ICatService {
 
     @Transactional
     @Override
-    public CatDto feedCat(UUID catId, UUID foodId) {
-        Cat cat = catRepository.findById(catId)
-                .orElseThrow(() -> new CatNotFoundException(catId));
-
-        Food food = foodRepository.findById(foodId)
-                .orElseThrow(() -> new ProductNotFoundException(foodId));
-
-        if (food != null) {
-            cat.feed(food);
-            cat = catRepository.save(cat);
-        }
-
-        return CatMapper.mapToDto(cat);
-    }
-
-        @Transactional
-    @Override
     public CatDto updateCat(UUID catId, CatDto updatedCatDto) {
         Cat updatedCat = CatMapper.mapToEntity(updatedCatDto);
         // TODO fix breed
@@ -229,12 +214,31 @@ public class CatServiceImpl implements ICatService {
     @Override
     @Transactional
     @Async
+    @Scheduled(cron = "0 1 1 * * ?")
     public void updateAllCatAgesAndLifeStages() {
         List<Cat> cats = catRepository.findAll();
         cats.parallelStream().forEach(cat -> {
             cat.updateCatAgeAndLifeStage();
             catRepository.save(cat);
         });
+    }
+
+    @Override
+    @Transactional
+    public CatDto applyItemEffectsToCat(UUID catId, UUID itemId) {
+        Cat cat = catRepository.findById(catId).orElseThrow(() -> new CatNotFoundException("Cat not found"));
+        ShopItem item = foodRepository.findById(itemId).orElseThrow(() -> new ProductNotFoundException(itemId));
+        cat.applyItemEffects(item);
+        return CatMapper.mapToDto(catRepository.save(cat));
+    }
+
+    @Scheduled(fixedRate = 60000) // Runs every minute
+    public void updateCatStats() {
+        List<Cat> cats = catRepository.findAll();
+        for (Cat cat : cats) {
+            cat.updateStatsOverTime();
+            catRepository.save(cat);
+        }
     }
 
     private Cat setNewCatAgeAndLifeStage(Cat cat) {
