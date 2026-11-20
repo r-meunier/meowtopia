@@ -59,11 +59,14 @@ Package manifests and asset metadata are included. See the [Unity README](meowto
 
 Requirements: JDK **22** and a PostgreSQL database. Docker Compose can start the development database supplied with the project.
 
-From `meowtopia-backend`, run:
+From `meowtopia-backend`, create your local credentials file, then start the database:
 
 ```sh
+cp .env.example .env   # then set your own passwords in .env
 docker compose up -d db
 ```
+
+`.env` is git-ignored. Spring Boot and Docker Compose both read it.
 
 Then start Spring Boot using the Maven wrapper.
 
@@ -91,14 +94,15 @@ The application uses the default Spring Boot HTTP port, `8080`. These are develo
 
 ### Mobile client
 
-From `meowtopia-mobile-app`, install the locked dependencies and start Expo:
+From `meowtopia-mobile-app`, create your local settings file, install the locked dependencies and start Expo:
 
 ```sh
+cp .env.example .env   # then set the API address and test account in .env
 npm ci
 npm start
 ```
 
-The client targets Expo SDK **51**. Its backend URL and prototype authentication settings are currently defined in `api/instance.js`. Configure those for your backend and device; a physical device needs a reachable server address rather than its own `localhost`.
+The client targets Expo SDK **51**. `api/instance.js` reads the backend URL and the prototype test-account credentials from `.env`, which is git-ignored. Expo embeds `EXPO_PUBLIC_*` values in the app bundle, so use test credentials only. A physical device needs a reachable server address rather than its own `localhost`.
 
 Android, iOS, and web launch scripts are also present in `package.json`; platform compatibility and the web target still need validation.
 

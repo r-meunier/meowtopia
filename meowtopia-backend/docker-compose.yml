@@ -4,9 +4,10 @@ services:
     restart: always
     ports:
       - 5432:5432
+    # DB_USERNAME and DB_PASSWORD are read from .env next to this file (git-ignored).
     environment:
-      POSTGRES_USER: rmeunier
-      POSTGRES_PASSWORD: secret
+      POSTGRES_USER: ${DB_USERNAME:?set DB_USERNAME in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       POSTGRES_DB: meowtopia-db
 
 volumes:
