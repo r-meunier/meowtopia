@@ -3,6 +3,7 @@ package com.rmeunier.meowtopia.backend.cat.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.rmeunier.meowtopia.backend.cat.utils.DateConverterUtil;
+import com.rmeunier.meowtopia.backend.shop.model.ShopItem;
 import com.rmeunier.meowtopia.backend.shop.model.shopitems.Food;
 import com.rmeunier.meowtopia.backend.user.model.UserAccount;
 import jakarta.persistence.*;
@@ -192,46 +193,19 @@ public class Cat {
         }
     }
 
-    // Methods to interact
-
-    public void feed(Food food) {
-        this.hunger += food.getEffectHunger();
-        if (this.hunger > 100) {
-            this.hunger = 100;
-        }
-
-        this.energy += food.getEffectEnergy();
-        if (this.energy > 100) {
-            this.energy = 100;
-        }
-
-        this.happiness += food.getEffectHappiness();
-        if (this.happiness > 100) {
-            this.happiness = 100;
-        }
-
-        this.health += food.getEffectHealth();
-        if (this.health > 100) {
-            this.health = 100;
-        }
+    public void updateStatsOverTime() {
+        this.hunger = Math.max(0, this.hunger - 1);
+        this.thirst = Math.max(0, this.thirst - 1);
+        this.happiness = Math.max(0, this.happiness - 1);
+        this.health = Math.max(0, this.health - 1);
+        this.cleanliness = Math.max(0, this.cleanliness - 1);
     }
 
-    public int water(int drinkAmount) {
-        thirst -= drinkAmount;
-        if (thirst < 0) {
-            thirst = 0;
-        }
-        return thirst;
-    }
-
-    // TODO: Implement playWithCat method
-    public void playWith() {
-        // Energy should lower
-        // Happiness should increase
-        // Cleanliness decreases depending on toy
-    }
-
-    public void clean() {
-        cleanliness = 100;
+    public void applyItemEffects(ShopItem item) {
+        this.hunger = Math.min(100, this.hunger + item.getEffectHunger());
+        this.thirst = Math.min(100, this.thirst + item.getEffectThirst());
+        this.happiness = Math.min(100, this.happiness + item.getEffectHappiness());
+        this.health = Math.min(100, this.health + item.getEffectHealth());
+        this.cleanliness = Math.min(100, this.cleanliness + item.getEffectCleanliness());
     }
 }

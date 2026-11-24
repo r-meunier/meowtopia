@@ -1,5 +1,6 @@
 package com.rmeunier.meowtopia.backend.user.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.rmeunier.meowtopia.backend.cat.model.Cat;
 import com.rmeunier.meowtopia.backend.shop.model.shopitems.PetToy;
@@ -52,10 +53,12 @@ public class UserAccount implements UserDetails {
 
     @Column(name = "created_at")
     @Temporal(TemporalType.TIMESTAMP)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
     private Date createdAt;
 
     @Column(name = "updated_at")
     @Temporal(TemporalType.TIMESTAMP)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
     private Date updatedAt;
 
     @OneToOne(fetch = FetchType.EAGER, mappedBy = "userAccount")
@@ -70,12 +73,6 @@ public class UserAccount implements UserDetails {
 
     @OneToMany(mappedBy = "userAccount", cascade = CascadeType.ALL)
     private Set<Transaction> transactions;
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_pet_toys",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "pet_toy_id"))
-    private Set<PetToy> petToys;
 
     public UserAccount(String username, String email, UserRole role) {
         this.username = username;

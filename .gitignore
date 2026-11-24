@@ -1,2 +1,8 @@
 # Local recovery backups and diagnostic Editor captures.
 /.local-recovery/
+
+# Local environment files with credentials, in any project folder.
+# Commit the .env.example templates; never the real .env files.
+.env
+.env.*
+!.env.example

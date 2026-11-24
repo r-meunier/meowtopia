@@ -11,7 +11,7 @@ import lombok.Setter;
 @Getter @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "drink")
+//@Table(name = "drink")
 public class Drink extends ShopItem {
     private String flavor;
 
