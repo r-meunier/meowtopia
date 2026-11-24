@@ -14,7 +14,11 @@ public class MeowtopiaLoadingScreen : MonoBehaviour
     [SerializeField, Min(0)] private float minimumDisplaySeconds = .8f;
     private bool loading;
 
-    private void Awake() { Application.runInBackground = true; }
+    private void Awake()
+    {
+        Application.runInBackground = !Application.isMobilePlatform;
+        MeowtopiaMobileLayout.Attach(this);
+    }
 
     private void Start() { retryButton.onClick.AddListener(Begin); Begin(); }
     private void Begin() { if (!loading) StartCoroutine(Load()); }

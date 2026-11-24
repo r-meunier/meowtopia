@@ -65,6 +65,7 @@ public static class MeowtopiaScreenSetup
             var pointer = new PointerEventData(EventSystem.current) { pointerId = -1 };
             var catRect = home.catAnimation.GetComponent<RectTransform>();
             var centre = (Vector2)session.Area.InverseTransformPoint(catRect.TransformPoint(catRect.rect.center));
+            pointer.position = RectTransformUtility.WorldToScreenPoint(null, session.Toy.transform.position);
             session.Toy.OnPointerDown(pointer);
             for (int i = 0; i < 20; i++)
             {
@@ -76,6 +77,7 @@ public static class MeowtopiaScreenSetup
                 throw new System.Exception("Dragging near the cat should gradually increase happiness and spend energy.");
             session.Toy.OnPointerUp(pointer);
             float happiness = cat.Happiness, energy = cat.Energy;
+            pointer.position = RectTransformUtility.WorldToScreenPoint(null, session.Toy.transform.position);
             session.Toy.OnPointerDown(pointer);
             for (int i = 0; i < 10; i++) session.Tick(.1f);
             if (cat.Happiness != happiness || cat.Energy != energy) throw new System.Exception("A stationary toy should give no reward.");

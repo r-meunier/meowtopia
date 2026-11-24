@@ -15,9 +15,14 @@ public class MeowtopiaHomeScreen : MonoBehaviour
     public MeowtopiaPlaySession PlaySession { get; private set; }
     private float tick, autosave;
     private bool dirty;
+    private bool suspended;
     private CatData Cat => SaveSystem.Current?.Cat;
 
-    private void Awake() { Application.runInBackground = true; }
+    private void Awake()
+    {
+        Application.runInBackground = !Application.isMobilePlatform;
+        MeowtopiaMobileLayout.Attach(this);
+    }
 
     private void Start()
     {
@@ -109,10 +114,15 @@ public class MeowtopiaHomeScreen : MonoBehaviour
     private void Refresh()
     {
         catNameText.text = string.IsNullOrWhiteSpace(Cat.Name) ? "Your cat" : Cat.Name;
-        var values = new[] { Cat.Hunger, Cat.Happiness, Cat.Hygiene, Cat.Energy };
-        var names = new[] { "Food", "Happiness", "Cleanliness", "Energy" };
-        for (var i = 0; i < 4; i++) { MeowtopiaUI.SetBar(needFills[i], values[i] / 100); needLabels[i].text = names[i] + "   " + Mathf.RoundToInt(values[i]) + "%"; }
+        for (var i = 0; i < 4; i++)
+        {
+            float value = i == 0 ? Cat.Hunger : i == 1 ? Cat.Happiness : i == 2 ? Cat.Hygiene : Cat.Energy;
+            MeowtopiaUI.SetBar(needFills[i], value / 100);
+            needLabels[i].text = NeedNames[i] + "  " + Mathf.RoundToInt(value) + "%";
+        }
     }
+
+    private static readonly string[] NeedNames = { "Food", "Happiness", "Cleanliness", "Energy" };
 
     private void Save()
     {
@@ -120,7 +130,23 @@ public class MeowtopiaHomeScreen : MonoBehaviour
         try { SaveSystem.Write(); dirty = false; }
         catch (Exception exception) { feedbackText.text = "Progress couldn't be saved. Please try again."; Debug.LogException(exception); }
     }
-    private void OnApplicationPause(bool paused) { if (paused) Save(); }
-    private void OnApplicationFocus(bool focused) { if (!focused) Save(); }
+    private void SetSuspended(bool value)
+    {
+        if (value == suspended) return;
+        suspended = value;
+        if (value)
+        {
+            if (PlaySession != null && PlaySession.IsActive) PlaySession.End("Play paused.");
+            Save();
+        }
+        else if (Cat != null)
+        {
+            // Phones often resume the existing scene instead of running Start again.
+            Decay(Math.Min(8 * 3600, Math.Max(0, SaveSystem.Now() - Cat.LastUpdateUnix)));
+            Refresh();
+        }
+    }
+    private void OnApplicationPause(bool paused) { SetSuspended(paused); }
+    private void OnApplicationFocus(bool focused) { SetSuspended(!focused); }
     private void OnDisable() { Save(); }
 }

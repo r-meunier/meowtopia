@@ -7,20 +7,27 @@ public class MeowtopiaDraggableToy : MonoBehaviour, IPointerDownHandler, IPointe
     public bool IsDragging { get; private set; }
     public bool PointerInside { get; private set; }
     private int pointerId;
+    private Vector2 grabOffset;
     private RectTransform Rect => (RectTransform)transform;
 
     public void OnPointerDown(PointerEventData data)
     {
         if (IsDragging) return;
+        if (playArea == null) return;
         pointerId = data.pointerId; IsDragging = true; PointerInside = true;
+        grabOffset = Vector2.zero;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(playArea, data.position, data.pressEventCamera, out var point))
+            grabOffset = Rect.anchoredPosition - point;
     }
     public void OnBeginDrag(PointerEventData data) { OnPointerDown(data); }
     public void OnDrag(PointerEventData data)
     {
         if (!IsDragging || data.pointerId != pointerId || playArea == null) return;
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(playArea, data.position, data.pressEventCamera, out var point)) return;
-        var bounds = playArea.rect; var margin = Rect.sizeDelta * .5f;
+        var bounds = playArea.rect;
+        var margin = new Vector2(Mathf.Min(Rect.rect.width, bounds.width), Mathf.Min(Rect.rect.height, bounds.height)) * .5f;
         PointerInside = bounds.Contains(point);
+        point += grabOffset;
         point.x = Mathf.Clamp(point.x, bounds.xMin + margin.x, bounds.xMax - margin.x);
         point.y = Mathf.Clamp(point.y, bounds.yMin + margin.y, bounds.yMax - margin.y);
         Rect.anchoredPosition = point;
